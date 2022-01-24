@@ -5,8 +5,22 @@ export default defineConfig({
   nodeModulesTransform: {
     type: 'none',
   },
-  theme:light,
+  locale: {
+    default: 'zh-CN',
+    antd: true,
+    title: false,
+    baseNavigator: true,
+    baseSeparator: '-',
+  },
+  theme: light,
+  antd: {
+    dark: true,
+  },
+  dva: {
+    immer: true,
+  },
+
   history: { type: 'hash' },
-  routes:routes,
+  routes: routes,
   fastRefresh: {},
 });

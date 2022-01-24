@@ -1,12 +1,14 @@
-import { FC } from 'react';
+import React, { FC } from 'react';
 import { InfoViewBox } from '@/pages/info/style';
+import Header from '@/pages/info/Header';
+import TableView from '@/pages/info/TableView';
 
-const InfoView:FC = () => {
-  return(
+const InfoView: FC = () => {
+  return (
     <InfoViewBox>
-      InfoView
-     xxxx
+      <Header />
+      <TableView />
     </InfoViewBox>
-  )
-}
-export default InfoView
+  );
+};
+export default InfoView;
