@@ -12,5 +12,6 @@ const Content:FC = ({children}) => {
 }
 const ContentBox = styled(Layout.Content)`
   padding: 10px;
+  overflow: hidden;
 `
 export default Content

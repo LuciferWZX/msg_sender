@@ -49,8 +49,6 @@ const Sider: FC = () => {
 };
 const SiderBox = styled(Layout.Sider)`
   height: 100vh;
-  top: 0;
-  position: sticky;
   user-select: none;
 `;
 const UserAvatar = styled.div`

@@ -39,8 +39,7 @@ const HeaderBox = styled(Layout.Header)`
   height: 48px;
   line-height: 48px;
   padding: 0;
-  top: 0;
-  position: sticky;
+
   .scrolling-icon {
     :hover {
       color: #096dd9;

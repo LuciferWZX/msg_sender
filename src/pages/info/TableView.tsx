@@ -1,52 +1,155 @@
-import { Table } from 'antd';
-import React, { FC } from 'react';
-import { ColumnsType } from 'antd/lib/table/interface';
-import { TableViewBox } from './style';
+import { Button, Input, Space, Tag } from 'antd';
+import React, { ChangeEvent, FC, useEffect, useState } from 'react';
+import { ActionBox, SearchBox, TableBox, TableViewBox } from './style';
 import { useSelector } from 'umi';
-
+import Highlighter from 'react-highlight-words'
+import { useDebounceFn, useMemoizedFn, useSize, useUpdateEffect } from 'ahooks';
+import { ArtColumn, BaseTable, features, useTablePipeline } from 'ali-react-table';
+import { SearchOutlined } from '@ant-design/icons';
+import PinyinMatch from 'pinyin-match'
 const TableView: FC = () => {
   const db = useSelector((state) => state.database.db);
   const excelData = useSelector((state) => state.database.excelData);
-  console.log(111, excelData);
-  const columns: ColumnsType<any> = [
-    {
-      title: 'Full Name',
-      //width: 100,
-      dataIndex: 'name',
-      key: 'name',
-      fixed: 'left',
+  const [columns,setColumns]=useState<ArtColumn[]>([])
+  const [dataSource,setDataSource]=useState<any[]>([])
+  const [keyword,setKeyword]=useState<string>('')
+  const size = useSize(document.getElementById('table-view'))
+
+  const { run } = useDebounceFn(
+    (e:ChangeEvent<HTMLInputElement>)=>{
+      setKeyword(e.target.value)
     },
     {
-      title: 'Age',
-      //width: 100,
-      dataIndex: 'age',
-      key: 'age',
-      fixed: 'left',
+      wait: 500,
     },
-    {
-      title: 'Action',
-      key: 'operation',
-      fixed: 'right',
-      render: () => <a>action</a>,
-    },
-  ];
-  const data = [
-    {
-      key: '1',
-      name: 'John Brown',
-      age: 32,
-      address: 'New York Park',
-    },
-    {
-      key: '2',
-      name: 'Jim Green',
-      age: 40,
-      address: 'London Park',
-    },
-  ];
+  );
+  //表格的配置
+  const pipeline = useTablePipeline()
+    .input({dataSource:dataSource,columns})
+    .use(features.columnResize({
+        //fallbackSize: 120,
+        //handleBackground: '#ddd',
+        handleHoverBackground: 'rgba(0, 168, 255,0.2)',
+        handleActiveBackground: '#89bff7',
+      }))
+    .use(features.columnRangeHover())
+    .use(features.sort({
+        mode: 'multiple',
+        highlightColumnWhenActive: true,
+        clickArea:'icon'
+      }))
+  const renderSearchWords=(text:string,result:[number,number]):string=>{
+    return text.substring(result[0], result[1] + 1)
+  }
+  useEffect(()=>{
+    fetchColumnsData()
+    fetchDataSource()
+  },[excelData])
+  useUpdateEffect(()=>{
+    fetchDataSource()
+  },[keyword])
+  //渲染列
+  const fetchColumnsData=useMemoizedFn(()=>{
+    if(excelData.length>0){
+      const titles = Object.keys(excelData[0]).concat("actions");
+      setColumns(
+        titles.map((item,index)=>{
+          if(item === "actions"){
+            return {
+              code:item,
+              name:"操作",
+              lock:true,
+              getValue(_){
+                return (
+                  <ActionBox>
+                    <Button type="link" size={'small'}>
+                      发送短信
+                    </Button>
+                    <Tag>xxxxxxxxxxxxxxxxxxxxxxx</Tag>
+                  </ActionBox>
+                )
+              }
+            }
+          }
+        return {
+          code:item,
+          name:item,
+          features: { sortable: true }
+        }
+      })
+      )
+    }
+  })
+  //渲染数据
+  const fetchDataSource=useMemoizedFn(()=>{
+    setDataSource(excelData.filter(item=>{
+      if(keyword === ""){
+        return true
+      }
+      let isPass = false
+      const values:any[] = Object.values(item);
+      for (let i=0;i<values.length;i++){
+        if(values[i]){
+          const result:boolean|[number,number] = PinyinMatch.match(
+            values[i].toString().toUpperCase(),
+            keyword
+          )
+          if(result){
+            isPass = true
+          }
+
+        }
+      }
+      return isPass
+    }))
+  })
+  //设置过滤的关键字
+  const changeWord=(e:ChangeEvent<HTMLInputElement>)=>{
+    run(e)
+  }
+  console.log(keyword);
   return (
-    <TableViewBox>
-      <Table columns={[]} dataSource={[]} />
+    <TableViewBox >
+      <SearchBox>
+        <Space>
+          <Input allowClear={true} onChange={changeWord} size={'small'} placeholder={"请输入"} suffix={<SearchOutlined/>}/>
+        </Space>
+      </SearchBox>
+      <TableBox  id={'table-view'}>
+        <BaseTable
+          {...pipeline.getProps()}
+          style={{  height: size?.height||300, overflow: 'auto' }}
+          components={{
+            Cell:({ row, rowIndex, column, colIndex, tdProps }:any)=> {
+            // row 单元格的行数据
+            // rowIndex 单元格的行下标
+            // column 单元格的列配置
+            // colIndex 单元格的列下标
+            // tdProps <td> 元素的 props
+              const item = (tdProps as any).children
+              const result: any | [number, number] = PinyinMatch.match(
+                item.toString(),
+                keyword
+              )
+              if(result === false){
+                return <td {...tdProps} />
+              }
+              return <td {...tdProps} children={<Highlighter
+                highlightClassName="highlight-class"
+                searchWords={[renderSearchWords(item.toString(),result)]}
+                autoEscape={true}
+                textToHighlight={item.toString()}
+              />} />
+            }
+          }}
+          getRowProps={()=>{
+            return {
+              className:'row-class'
+            }
+          }}
+        />
+      </TableBox>
+
     </TableViewBox>
   );
 };
